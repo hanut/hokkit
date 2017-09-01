@@ -1,0 +1,36 @@
+extends layout.pug
+block append content 
+	center
+		h2.form-signin-heading
+			img(src="images/loginLogo.png",alt="Hokkit - Your OpenSource socket client")
+	#mfh
+		row(rv-show="visionToggles.connection")
+			.col-lg-6.col-lg-offset-3
+				form.hform(action="#")
+					label.sr-only(for="serverip") Server IP
+					input#serverip.form-control(type="text",placeholder="Server IP",autofocus="",name="serverip")
+					label.sr-only(for="passphrase") Socket Options JSON
+					textarea#options.form-control(placeholder="Options in json form") 
+					br
+					if error
+						.error #{error}
+						br
+					button.btn.btn-lg.btn-primary.btn-block(type="submit") Connect 
+		row(rv-show="visionToggles.events")
+			.col-lg-6.col-lg-offset-3
+				form.hform(action="#")
+					label.sr-only(for="serverip") Server IP
+					input#serverip.form-control(type="text",placeholder="Server IP",autofocus="",name="serverip")
+					label.sr-only(for="passphrase") Organization ID
+					input#passphrase.form-control(type="password",placeholder="Password",required="",autofocus="",name="passphrase") 
+					br
+					if error
+						.error #{error}
+						br
+					button.btn.btn-lg.btn-primary.btn-block(type="submit") Sign in
+block append scripts
+	script(type="text/javascript", src="https://unpkg.com/sightglass",defer,async)
+	script(type="text/javascript", src="https://unpkg.com/rivets",defer,async)
+	script(type="text/javascript").
+		var creator = "Hanut Singh Gusain";
+		rivets.bind($('#mfh'), { visionToggles : {events:false,connection:true} });

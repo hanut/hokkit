@@ -1,0 +1,29 @@
+extends layout.pug
+block append style
+  style.
+    .fourohfour .logo a img{
+      height:50px;
+    }
+    .fourohfour .header{
+      width:320px;
+    }
+    .fourohfour h1{
+      font-size:3em;
+    }
+block nav
+  include nav_error
+block append content
+  .row
+    .col-xs-12.text-center
+      .fourohfour
+        img.header(src="/images/404.png",alt="All Hands - Page Not Found")  
+        .ocean
+          h1  4 - oh - 4
+        .main
+          h2 The page you were trying to reach doesn't exist.
+          p.help
+            a(href='http://allhands.patchus.in/faq') Why
+            |  might this be happening?
+        .logo
+          a(href='http://allhands.patchus.in')
+            img(src='/images/footerLogo.png')
