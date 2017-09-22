@@ -32,8 +32,14 @@ module.exports.routes = {
   *                                                                          *
   ***************************************************************************/
 
-  '/': {
-    view: 'index'
+  'GET /': {
+    controller: 'DevController',
+    action: 'index'
+  },
+
+  'POST /' : {
+    controller : 'DevController',
+    action: 'connect'
   }
 
 };
