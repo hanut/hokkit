@@ -1,36 +1,202 @@
 extends layout.pug
-block append content 
-	center
-		h2.form-signin-heading
-			img(src="images/loginLogo.png",alt="Hokkit - Your OpenSource socket client")
-	#mfh
-		row(rv-show="visionToggles.connection")
-			.col-lg-6.col-lg-offset-3
-				form.hform(action="#")
-					label.sr-only(for="serverip") Server IP
-					input#serverip.form-control(type="text",placeholder="Server IP",autofocus="",name="serverip")
-					label.sr-only(for="passphrase") Socket Options JSON
-					textarea#options.form-control(placeholder="Options in json form") 
-					br
-					if error
-						.error #{error}
-						br
-					button.btn.btn-lg.btn-primary.btn-block(type="submit") Connect 
-		row(rv-show="visionToggles.events")
-			.col-lg-6.col-lg-offset-3
-				form.hform(action="#")
-					label.sr-only(for="serverip") Server IP
-					input#serverip.form-control(type="text",placeholder="Server IP",autofocus="",name="serverip")
-					label.sr-only(for="passphrase") Organization ID
-					input#passphrase.form-control(type="password",placeholder="Password",required="",autofocus="",name="passphrase") 
-					br
-					if error
-						.error #{error}
-						br
-					button.btn.btn-lg.btn-primary.btn-block(type="submit") Sign in
+block append content
+  center
+    h2.form-signin-heading
+      img(src="images/loginLogo.png",alt="Hokkit - Your OpenSource socket client")
+  #mfh
+    row(rv-show="visionToggles.connection")
+      .col-md-3
+        form.hform(action="#",hidden=true)#listnerForm
+          input#listenEventName.form-control(type="text",placeholder="Event Name",autofocus="",name="eventName")
+          button.btn.btn-lg.btn-primary.btn-block(onclick="listenEvent()", type="button")#addEvent Add Listner
+
+          .col-md-12
+            .table-responsive
+              table.table.list-table#listnerTable
+
+      .col-md-6
+        form.hform
+          label.sr-only(for="serverip") Server IP
+          input#serverip.form-control(type="text",placeholder="Server IP",autofocus="",name="serverip")
+          label.sr-only(for="options") Socket Options JSON
+          textarea#options.form-control(placeholder="{'test':'data'}")
+          br
+          if error
+            .error #{error}
+            br
+          button.btn.btn-lg.btn-primary.btn-block(onclick="connect()", type="button")#connetion Connect
+          button.btn.btn-lg.btn-danger.btn-block#disconnection(onclick="disconnect()", style="display : none", type="button") Disconnect
+
+        .col-md-12
+          .table-responsive
+            table.table.list-table#eventDataTable(hidden=true)
+
+
+
+      .col-md-3
+        form.hform(hidden=true)#EmitForm
+          label.sr-only(for="emitName") Event Name
+          input#emitName.form-control(type="text",placeholder="Emit Name",autofocus="",name="emitName")
+          textarea#emitData.form-control(placeholder="{'test':'data'}")
+          button.btn.btn-lg.btn-primary.btn-block(onclick="sendEvent()",style="margin-top: 20px", type="button")#sendEmit Send Event
+
+
+
+    //row(rv-show="visionToggles.events")
+    //	.col-lg-6.col-lg-offset-3
+    //		form.hform(action="#")
+    //			label.sr-only(for="serverip") Server IP
+    //			input#serverip.form-control(type="text",placeholder="Server IP",autofocus="",name="serverip")
+    //			label.sr-only(for="passphrase") Organization ID
+    //			input#passphrase.form-control(type="password",placeholder="Password",required="",autofocus="",name="passphrase")
+    //			br
+    //			if error
+    //				.error #{error}
+    //				br
+    //			button.btn.btn-lg.btn-primary.btn-block(type="submit") Sign in
+
+block append style
+  link(rel="stylesheet", href="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/2.0.2/css/toastr.min.css")
+
 block append scripts
-	script(type="text/javascript", src="https://unpkg.com/sightglass",defer,async)
-	script(type="text/javascript", src="https://unpkg.com/rivets",defer,async)
-	script(type="text/javascript").
-		var creator = "Hanut Singh Gusain";
-		rivets.bind($('#mfh'), { visionToggles : {events:false,connection:true} });
+  script(type="text/javascript", src="https://unpkg.com/sightglass",defer,async)
+  script(type="text/javascript", src="https://unpkg.com/rivets",defer,async)
+  script(type="text/javascript", src="//cdnjs.cloudflare.com/ajax/libs/toastr.js/2.0.2/js/toastr.min.js")
+  script(type="text/javascript", src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/2.0.3/socket.io.js")
+
+  script(type="text/javascript").
+    var creator = "Hanut Singh Gusain";
+    rivets.bind($('#mfh'), {visionToggles: {events: false, connection: true}});
+
+
+  script.
+    var socket;
+    var eventArray = [];
+    var eventDataArray = [];
+    function connect() {
+
+      var errorFlag = false;
+      var connectionAttempted = 0;
+      var serverip = $('#serverip').val()
+      var options = $('#options').val()
+      options.trim();
+      if(options.length>0){
+        try {
+          var jsonObj = (JSON.parse(options))
+          options = jsonObj;
+        } catch (e){
+          errorFlag = true;
+          toastr.error("Please enter a valid json in options");
+        }
+      }
+      if(!errorFlag){
+        socket = io(serverip, options);
+        socket.on('connect', function () {
+          console.log('check 2', socket.connected);
+          toastr.success("Socket connection established");
+          $("#connetion").hide();
+          $("#disconnection").show();
+          $("#listnerForm").show();
+          $("#EmitForm").show();
+          $("#serverip").prop("disabled", true);
+          $("#options").prop("disabled", true);
+          $("#eventDataTable").show();
+
+
+        });
+        socket.on('connect_failed', function () {
+          toastr.error("connection failed");
+        })
+        socket.on('connect_error', function () {
+          connectionAttempted += 1;
+          console.log(connectionAttempted)
+          if(connectionAttempted > 2){
+            socket.close();
+            connectionAttempted = 0;
+            toastr.error("Connection could not be established.");
+          }
+        })
+        socket.on('hello', function () {
+          toastr.success("hello recived")
+        })
+
+        socket.on('disconnect', function () {
+          toastr.success("Socket disconnected successfully.")
+        })
+
+      }
+    }
+
+    function listenEvent() {
+      var eventName = $('#listenEventName').val()
+      eventArray.push(eventName)
+      socket.on(eventName, function (data) {
+        toastr.info("Event received from "+eventName + ". ");
+        var data = {
+          eventName : eventName,
+          eventData : data
+        }
+        eventDataArray.unshift(data);
+        renderEventDataTable();
+      })
+      toastr.success("Listening to event " + eventName)
+      generateTeamUserTable()
+    }
+
+    function sendEvent() {
+      var emitValue = $("#emitData").val()
+      var emitName = $("#emitName").val()
+      socket.emit(emitName, emitValue);
+      toastr.success("Event emitted successfully.");
+    }
+
+    function disconnect() {
+      socket.close()
+      $("#connetion").show();
+      $("#disconnection").hide();
+      $("#listnerForm").hide();
+      $("#eventDataTable").hide();
+      $("#EmitForm").hide();
+      $("#serverip").prop("disabled", false);
+      $("#options").prop("disabled", false);
+    }
+
+    function removeListner(eventIndex) {
+      socket.off(eventArray[eventIndex]);
+
+      console.log(eventArray)
+      var temp = [];
+      for(i=0; i<eventArray.length; i++){
+        if(i != eventIndex){
+          temp.push(eventArray[i]);
+        }
+      }
+      eventArray = temp;
+      generateTeamUserTable()
+    }
+
+    function generateTeamUserTable() {
+      var tableHTML = "<tr><th style='text-align: center' >Listening Event</th><th style='text-align: center'>Action</th></tr>";
+      for (var i = 0, len = eventArray.length; i < len; i++) {
+        tableHTML += "<tr style='text-align: center'>";
+        tableHTML += "<td>" + eventArray[i] + "</td>";
+        tableHTML += "<td style='text-align: center'>";
+        tableHTML += "<a href='javascript:void(0);' onclick='removeListner(\""+ [i] + "\")'>Remove</a>";
+        tableHTML += "</td>";
+        tableHTML += "</tr>";
+      }
+      $('#listnerTable').html(tableHTML)
+    }
+
+    function renderEventDataTable() {
+      var tableHTML = "<tr><th style='text-align: center' >Listening Event</th><th style='text-align: center'>Data</th></tr>";
+      for (var i = 0, len = eventDataArray.length; i < len; i++) {
+        tableHTML += "<tr style='text-align: center'>";
+        tableHTML += "<td>" + eventDataArray[i].eventName + "</td>";
+        tableHTML += "<td style='text-align: center'>" + eventDataArray[i].eventData + "</td>";
+        tableHTML += "</td>";
+        tableHTML += "</tr>";
+      }
+      $('#eventDataTable').html(tableHTML)
+    }
+
