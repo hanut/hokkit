@@ -42,19 +42,6 @@ block append content
 
 
 
-    //row(rv-show="visionToggles.events")
-    //	.col-lg-6.col-lg-offset-3
-    //		form.hform(action="#")
-    //			label.sr-only(for="serverip") Server IP
-    //			input#serverip.form-control(type="text",placeholder="Server IP",autofocus="",name="serverip")
-    //			label.sr-only(for="passphrase") Organization ID
-    //			input#passphrase.form-control(type="password",placeholder="Password",required="",autofocus="",name="passphrase")
-    //			br
-    //			if error
-    //				.error #{error}
-    //				br
-    //			button.btn.btn-lg.btn-primary.btn-block(type="submit") Sign in
-
 block append style
   link(rel="stylesheet", href="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/2.0.2/css/toastr.min.css")
 
@@ -159,6 +146,8 @@ block append scripts
       $("#EmitForm").hide();
       $("#serverip").prop("disabled", false);
       $("#options").prop("disabled", false);
+      eventArray = [];
+      eventDataArray = [];
     }
 
     function removeListner(eventIndex) {
